@@ -1,0 +1,41 @@
+#!/bin/bash
+set -e  # 遇到错误立即退出
+
+# 系统启动app执行脚本
+SRC_APP="/home/root/app"
+# 目标执行文件路径
+DEST_APP="/runapp"
+# 函数：打印带时间戳的日志（同时输出到屏幕和日志文件）
+log() {
+    local MSG="[$(date +'%Y-%m-%d %H:%M:%S')] $1"
+    echo "${MSG}"
+}
+if [ ! -f "${SRC_APP}" ]; then
+    log "error SRC file ${SRC_APP} "
+    exit 1
+fi
+if [ -f "${DEST_APP}" ]; then
+    log "${DEST_APP} Backup ${DEST_APP}.bak"
+    cp -f "${DEST_APP}" "${DEST_APP}.bak"  # 备份旧文件，不删除
+fi
+log "cp ${SRC_APP} to ${DEST_APP} , run"
+cp -f "${SRC_APP}" "${DEST_APP}" || {
+    log "error：cp app file"
+    exit 1
+}
+chmod +x "${DEST_APP}" || {
+    log "error chmod ${DEST_APP}"
+    exit 1
+}
+if [ -f "${DEST_APP}" ] && [ -x "${DEST_APP}" ]; then
+    log "=========="
+    log "SRC_APP：${SRC_APP}"
+    log "RUN_APP：${DEST_APP}"
+    cd /
+    .${DEST_APP} &
+else
+    log "ERROR ${DEST_APP} "
+    exit 1
+fi
+cd ~
+exit 0

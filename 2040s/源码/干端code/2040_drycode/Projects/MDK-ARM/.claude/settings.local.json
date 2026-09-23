@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la \"d:/work/GB2040S/dm/ETH/\")",
+      "Read(//d/work/GB2040S/dm/ETH/**)",
+      "Bash(find \"d:/work/GB2040S/dm/ETH_TEST/Middlewares\" -type f | sort)",
+      "Read(//d/work/GB2040S/dm/ETH_TEST/Middlewares/**)"
+    ]
+  }
+}

@@ -1,0 +1,501 @@
+============================================================
+              2040S QSPI 启动问题调试记录
+============================================================
+
+一、调试日期
+------------------------------------------------------------
+
+2026 年 9 月 4 日
+
+
+二、硬件和软件环境
+------------------------------------------------------------
+
+1. 处理器
+
+   Xilinx Zynq-7000 XC7Z045
+
+2. QSPI Flash
+
+   型号：Macronix MX25L25635E
+   容量：32 MiB（256 Mbit）
+   Flash ID：C2 20 19
+
+3. 软件环境
+
+   PetaLinux：2023.1
+   U-Boot：2023.01
+   Linux：6.1.5-xilinx-v2023.1
+   Vitis：2023.1
+
+4. 启动文件
+
+   BOOT.BIN：
+       包含 FSBL、bitstream 和 U-Boot
+
+   boot.scr：
+       独立的 U-Boot 启动脚本
+
+
+三、初始问题
+------------------------------------------------------------
+
+使用 SD 卡启动时，板卡可以正常启动并进入 U-Boot。
+
+将相同的 BOOT.BIN 和 boot.scr 烧录到 QSPI Flash 后，
+拨码开关切换到 QSPI 启动，上电后无法正常进入 U-Boot。
+
+
+四、排查过程
+------------------------------------------------------------
+
+4.1 U-Boot 识别 QSPI Flash
+
+在 U-Boot 中执行：
+
+   Zynq> sf probe 0 0 0
+
+返回：
+
+   SF: Detected mx25l25635e with page size 256 Bytes,
+   erase size 64 KiB, total 32 MiB
+
+结论：
+
+   U-Boot 可以识别 MX25L25635E，基本 SPI 通信正常。
+
+
+4.2 从 SD 卡加载 BOOT.BIN 和 boot.scr
+
+执行：
+
+   Zynq> mmc dev 0
+   Zynq> fatload mmc 0:1 0x10000000 BOOT.BIN
+   Zynq> setenv boot_size ${filesize}
+
+   Zynq> fatload mmc 0:1 0x10800000 boot.scr
+   Zynq> setenv bootscr_size ${filesize}
+
+实际文件大小：
+
+   BOOT.BIN：0x1185c8（1148360 字节）
+   boot.scr：0x1797（6039 字节）
+
+
+4.3 烧录 BOOT.BIN
+
+执行：
+
+   Zynq> sf erase 0x00000000 0x009B0000
+   SF: 10158080 bytes @ 0x0 Erased: OK
+
+   Zynq> sf write 0x10000000 0x00000000 ${boot_size}
+   device 0 offset 0x0, size 0x1185c8
+   SF: 1148360 bytes @ 0x0 Written: OK
+
+BOOT.BIN 烧录地址：
+
+   QSPI 地址：0x00000000
+
+
+4.4 烧录 boot.scr
+
+执行：
+
+   Zynq> sf erase 0x009C0000 0x00010000
+   SF: 65536 bytes @ 0x9c0000 Erased: OK
+
+   Zynq> sf write 0x10800000 0x009C0000 ${bootscr_size}
+   device 0 offset 0x9c0000, size 0x1797
+   SF: 6039 bytes @ 0x9c0000 Written: OK
+
+boot.scr 烧录地址：
+
+   QSPI 地址：0x009C0000
+
+
+4.5 回读 BOOT.BIN 并校验
+
+执行：
+
+   Zynq> sf read 0x12000000 0x00000000 ${boot_size}
+   SF: 1148360 bytes @ 0x0 Read: OK
+
+   Zynq> crc32 0x10000000 ${boot_size}
+   crc32 for 10000000 ... 101185c7 ==> 1afb0681
+
+   Zynq> crc32 0x12000000 ${boot_size}
+   crc32 for 12000000 ... 121185c7 ==> 1afb0681
+
+   Zynq> cmp.b 0x10000000 0x12000000 ${boot_size}
+   Total of 1148360 byte(s) were the same
+
+结论：
+
+   SD 卡中的 BOOT.BIN 与 QSPI 回读出的 BOOT.BIN 完全一致。
+
+
+4.6 回读 boot.scr 并校验
+
+执行：
+
+   Zynq> sf read 0x12800000 0x009C0000 ${bootscr_size}
+   SF: 6039 bytes @ 0x9c0000 Read: OK
+
+   Zynq> cmp.b 0x10800000 0x12800000 ${bootscr_size}
+   Total of 6039 byte(s) were the same
+
+结论：
+
+   SD 卡中的 boot.scr 与 QSPI 回读出的 boot.scr 完全一致。
+
+
+4.7 检查 BOOT.BIN 的分区头偏移
+
+Boot Header 中保存的分区头偏移：
+
+   Zynq> sf read 0x13000000 0x00000098 0x4
+   Zynq> md.l 0x13000000 1
+
+   13000000: 000008c0
+
+正确的分区头地址为：
+
+   0x000008C0
+
+读取 QSPI 中的分区头：
+
+   Zynq> sf read 0x13000000 0x000008C0 0x40
+   SF: 64 bytes @ 0x8c0 Read: OK
+
+   Zynq> md.b 0x13000000 0x40
+
+   13000000: 00 00 02 01 03 00 00 00
+   13000008: 20 03 00 00 40 02 00 00
+
+从 SD 卡加载到内存后，BOOT.BIN 中同一位置为：
+
+   Zynq> fatload mmc 0:1 0x10000000 BOOT.BIN
+   Zynq> md.l 0x10000094 2
+
+   10000094: 00000000 000008c0
+
+结论：
+
+   BOOT.BIN 内部的 Boot Header 和分区头偏移正确。
+
+
+五、FSBL 启动日志对比
+------------------------------------------------------------
+
+5.1 SD 卡启动日志
+
+   Xilinx First Stage Boot Loader
+   Release 2023.1
+   Boot mode is SD
+   SD Init Done
+   Partition Header Offset:0x00000C80
+   Partition Count: 3
+   ...
+   SUCCESSFUL_HANDOFF
+   FSBL Status = 0x1
+
+   U-Boot 2023.01
+   CPU:   Zynq 7z045
+   DRAM:  ECC disabled 1 GiB
+   ...
+   Zynq>
+
+说明：
+
+   SD 卡启动时，FSBL 能够正确读取分区头，
+   并成功将控制权交给 U-Boot。
+
+
+5.2 QSPI 启动日志
+
+   Xilinx First Stage Boot Loader
+   Release 2023.1
+   Boot mode is QSPI
+   Single Flash Information
+   FlashID=0xC2 0x20 0x19
+   MACRONIX 256M Bits
+   QSPI is in single flash connection
+   QSPI is in 4-bit mode
+   QSPI Init Done
+   Flash Base Address: 0xFC000000
+   Image Start Address: 0x00000000
+   Partition Header Offset:0xDDDDCCCC
+   Bank Selection 221
+   BankSel 221 != Register Read 1
+   Bank Selection Failed
+   Move Image failed
+   Header Information Load Failed
+   Partition Header Load Failed
+   FSBL Status = 0xA00E
+
+关键异常：
+
+   正确分区头偏移：0x000008C0
+   FSBL 读到的偏移：0xDDDDCCCC
+
+
+六、问题定位
+------------------------------------------------------------
+
+启动过程可以分为：
+
+   BootROM
+       |
+       v
+   FSBL 加载和执行
+       |
+       v
+   FSBL 初始化 QSPI
+       |
+       v
+   FSBL 读取 BOOT.BIN 分区头
+       |
+       v
+   加载 U-Boot
+
+实际结果：
+
+   BootROM 加载 FSBL                         成功
+   FSBL 打印 Boot mode is QSPI               成功
+   FSBL 读取 Flash ID                         成功
+   FSBL 初始化 QSPI                           成功
+   FSBL 使用 4-bit 模式读取分区头             失败
+   FSBL 加载 U-Boot                           失败
+
+最终确认：
+
+   QSPI Flash 的擦除、写入和 U-Boot 回读均正常，
+   但 FSBL 使用当前 4-bit QSPI 配置读取启动头时异常。
+
+因此本问题不是：
+
+   1. BOOT.BIN 烧录地址错误；
+   2. BOOT.BIN 文件内容错误；
+   3. boot.scr 烧录地址错误；
+   4. boot.scr 文件内容错误；
+   5. U-Boot 配置问题；
+   6. Linux 设备树问题。
+
+原因是：
+
+   FSBL 使用 x4 QSPI 模式读取 MX25L25635E 时，
+   读取到错误数据，导致分区头偏移变成 0xDDDDCCCC。
+
+
+七、解决方法
+------------------------------------------------------------
+
+7.1 在虚拟机中准备 Vitis 环境
+
+执行：
+
+   source /opt/pkg/petalinux/settings.sh
+   source /tools/Xilinx/Vitis/2023.1/settings64.sh
+   vitis &
+
+
+7.2 使用 XSA 创建 FSBL 工程
+
+在 Vitis 中：
+
+   1. 选择：
+      File -> New -> Application Project
+
+   2. 选择：
+      Create a new platform from hardware (XSA)
+
+   3. 选择 FPGA 工程师提供的 XSA 文件。
+
+   4. 选择处理器：
+      ps7_cortexa9_0
+
+   5. 选择操作系统：
+      standalone
+
+   6. 选择模板：
+      Zynq FSBL
+
+工程结构：
+
+   2040s_platform
+       |
+       +-- zynq_fsbl_system
+               |
+               +-- fsbl_qspi
+
+
+7.3 修改 FSBL 的 QSPI 总线宽度
+
+在 Vitis 中打开文件：
+
+   fsbl_qspi/src/qspi.c
+
+进入函数：
+
+   InitQspi(void)
+
+找到 QSPI 总线宽度配置宏：
+
+   XPAR_XQSPIPS_0_QSPI_BUS_WIDTH
+
+原始配置使用 XSA 生成的 4-bit 总线宽度。
+
+调试修改：
+
+   将 XPAR_XQSPIPS_0_QSPI_BUS_WIDTH
+   对应的总线宽度修改为：
+
+       0
+
+修改目的：
+
+   强制 FSBL 使用 x1 SPI 模式读取 Flash，
+   绕过 x4 模式下的异常读取。
+
+
+7.4 重新编译 FSBL
+
+在 Vitis 中执行：
+
+   右键 fsbl_qspi
+       |
+       +-- Clean Project
+       |
+       +-- Build Project
+
+生成新的 FSBL 文件：
+
+   /home/startest4070/workspace/fsbl_qspi/Debug/fsbl_qspi.elf
+
+
+7.5 使用新 FSBL 重新生成 BOOT.BIN
+
+进入 PetaLinux 工程目录：
+
+   cd ~/share/2040s_prj/2040s
+   source /opt/pkg/petalinux/settings.sh
+
+如果 BOOT.BIN 包含 bitstream，执行：
+
+   petalinux-package --boot \
+       --fsbl /home/startest4070/workspace/fsbl_qspi/Debug/fsbl_qspi.elf \
+       --fpga images/linux/system.bit \
+       --u-boot images/linux/u-boot.elf \
+       --force
+
+如果 BOOT.BIN 不包含 bitstream，去掉 --fpga 参数：
+
+   petalinux-package --boot \
+       --fsbl /home/startest4070/workspace/fsbl_qspi/Debug/fsbl_qspi.elf \
+       --u-boot images/linux/u-boot.elf \
+       --force
+
+
+7.6 将新的文件烧录到 QSPI
+
+在 U-Boot 中执行：
+
+   mmc dev 0
+
+   fatload mmc 0:1 0x10000000 BOOT.BIN
+   setenv boot_size ${filesize}
+
+   fatload mmc 0:1 0x10800000 boot.scr
+   setenv bootscr_size ${filesize}
+
+   sf probe 0 0 0
+
+   sf  
+
+
+7.7 烧录后校验
+
+   sf read 0x12000000 0x00000000 ${boot_size}
+   crc32 0x10000000 ${boot_size}
+   crc32 0x12000000 ${boot_size}
+   cmp.b 0x10000000 0x12000000 ${boot_size}
+
+   sf read 0x12800000 0x009C0000 ${bootscr_size}
+   cmp.b 0x10800000 0x12800000 ${bootscr_size}
+
+
+八、最终验证结果
+------------------------------------------------------------
+
+将 FSBL 的 QSPI 总线宽度从 x4 修改为 x1 后：
+
+   1. 重新编译 FSBL；
+   2. 使用新 FSBL 重新生成 BOOT.BIN；
+   3. 将新的 BOOT.BIN 烧录到 QSPI 地址 0x00000000；
+   4. 将 boot.scr 烧录到 QSPI 地址 0x009C0000；
+   5. 拨码开关切换到 QSPI 启动；
+   6. 重新上电。
+
+最终结果：
+
+   QSPI 启动成功；
+   FSBL 正常运行；
+   U-Boot 正常打印并接管系统。
+
+
+九、最终结论
+------------------------------------------------------------
+
+本次 QSPI 启动失败的根本原因是：
+
+   FSBL 按照原 XSA 配置使用 x4 QSPI 模式读取
+   MX25L25635E 时，读取启动头/分区头数据异常。
+
+异常数据：
+
+   0xDDDDCCCC
+
+正确数据：
+
+   0x000008C0
+
+最终解决方案：
+
+   使用 Vitis 基于 XSA 生成 FSBL 源码，
+   在 src/qspi.c 的 InitQspi() 相关配置中，
+   将 XPAR_XQSPIPS_0_QSPI_BUS_WIDTH 对应的总线宽度
+   修改为 1，强制 FSBL 使用 x1 SPI 模式。
+
+
+十、调试经验
+------------------------------------------------------------
+
+1. U-Boot 能够执行 sf probe、擦除和写入，
+   不代表 FSBL 的 x4 读取一定正常。
+
+2. 能看到 FSBL 的 QSPI 打印，
+   说明 BootROM 已经成功加载并执行 FSBL。
+
+3. FSBL 阶段失败时，
+   不应优先修改 U-Boot、boot.scr 或 Linux 设备树。
+
+4. boot.scr 只在 U-Boot 阶段执行，
+   与 FSBL 读取分区头失败无关。
+
+5. 排查 QSPI 启动问题时，
+   应分别验证：
+
+       - Flash 基本 SPI 通信；
+       - FSBL 的 x1/x2/x4 读取；
+       - 4-byte 地址和 Bank 处理；
+       - BOOT.BIN 的 Boot Header；
+       - BOOT.BIN 的分区头。
+
+6. 本项目最终采用的可用方案：
+
+       FSBL 使用 x1 SPI 模式启动。
+
+============================================================
+                         记录结束
+============================================================

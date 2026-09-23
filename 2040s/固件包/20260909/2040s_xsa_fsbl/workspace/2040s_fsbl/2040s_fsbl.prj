@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="ASCII"?>
+<sdkproject:SdkProject xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:sdkproject="http://www.xilinx.com/sdkproject" name="2040s_fsbl" location="/home/startest4070/workspace/2040s_fsbl" platform="/home/startest4070/workspace/2040s_0908/export/2040s_0908/2040s_0908.xpfm" platformUID="xilinx:::0.0(custom)" systemProject="2040s_fsbl_system" sysConfig="2040s_0908" runtime="cpp" cpu="standalone_ps7_cortexa9_0" cpuInstance="ps7_cortexa9_0" os="standalone" mssSignature="b2d5c6e89587f2a97f0d980cb4e2f087">
+  <configuration name="Debug" id="xilinx.gnu.armv7.exe.debug.2031256258">
+    <configBuildOptions xsi:type="sdkproject:SdkOptions"/>
+    <lastBuildOptions xsi:type="sdkproject:SdkOptions"/>
+  </configuration>
+  <configuration name="Release" id="xilinx.gnu.armv7.exe.release.56514246" dirty="true">
+    <configBuildOptions xsi:type="sdkproject:SdkOptions"/>
+  </configuration>
+  <template appTemplateName="zynq_fsbl" hasBspSettings="true"/>
+</sdkproject:SdkProject>

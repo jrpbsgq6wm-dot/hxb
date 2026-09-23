@@ -1,0 +1,37 @@
+{
+  "C_Cpp.default.configurationProvider": "",
+  "C_Cpp.intelliSenseEngine": "Default",
+  "C_Cpp.workspaceParsingPriority": "highest",
+  "C_Cpp.intelliSenseCachePath": "${workspaceFolder}/.vscode/ipch-fixed",
+  "C_Cpp.default.compilerPath": "",
+  "C_Cpp.default.defines": [
+    "DEBUG"
+  ],
+  "C_Cpp.default.compilerArgs": [
+    "-I${workspaceFolder}/inc",
+    "-I${workspaceFolder}/src",
+    "-DDEBUG"
+  ],
+  "C_Cpp.default.compileCommands": "${workspaceFolder}/compile_commands.json",
+  "C_Cpp.default.includePath": [
+    "${workspaceFolder}/inc",
+    "${workspaceFolder}/src",
+    "${workspaceFolder}/**"
+  ],
+  "C_Cpp.default.browse.path": [
+    "${workspaceFolder}/inc",
+    "${workspaceFolder}/src",
+    "${workspaceFolder}/**"
+  ],
+  "C_Cpp.default.browse.limitSymbolsToIncludedHeaders": false,
+  "C_Cpp.default.browse.databaseFilename": "${workspaceFolder}/.vscode/browse-fixed.vc.db",
+  "C_Cpp.default.intelliSenseMode": "linux-gcc-arm",
+  "C_Cpp.default.cStandard": "c11",
+  "files.encoding": "utf8",
+  "files.associations": {
+    "*.h": "c"
+  },
+  "clangd.arguments": [
+    "--compile-commands-dir=${workspaceFolder}"
+  ]
+}

@@ -1,0 +1,28 @@
+# Keil build output and user workspace state
+**/Output/
+*.o
+*.d
+*.crf
+*.dep
+*.axf
+*.map
+*.lst
+*.uvguix.*
+
+# VS Code and SDK indexes/caches
+**/.vscode/ipch/
+**/.vscode/ipch-fixed/
+*.VC.DB
+*.VC.DB-shm
+*.VC.DB-wal
+*.ipch
+*.pdom
+*.index
+**/.metadata/
+**/.objs/
+**/.deps/
+**/Debug/
+**/Release/
+**/logs/
+*.log
+*.lock

@@ -1,0 +1,7 @@
+/*2040s_0908*/
+the_ROM_image:
+{
+  [bootloader]<2040s_0908/boot/fsbl.elf>
+   <bitstream> 
+  <elf>
+}

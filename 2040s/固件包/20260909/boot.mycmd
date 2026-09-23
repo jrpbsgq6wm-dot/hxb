@@ -1,0 +1,163 @@
+# This is a boot script for U-Boot
+# Generate boot.scr:
+# mkimage -c none -A arm -T script -d boot.cmd.default boot.scr
+#
+################
+
+for boot_target in ${boot_targets};
+do
+	echo "Trying to load boot images from ${boot_target}"
+	if test "${boot_target}" = "jtag" ; then
+		bootm 0x00200000 0x04000000 0x00100000
+	fi
+	if test "${boot_target}" = "mmc0" || test "${boot_target}" = "mmc1" || test "${boot_target}" = "usb0" || test "${boot_target}" = "usb1"; then
+		setenv fitimage_name "image.ub"	
+		setenv kernel_name "uImage"
+		setenv ramdisk_name "ramdisk.cpio.gz.u-boot"
+		setenv rootfs_name "rootfs.cpio.gz.u-boot"
+		setenv fpga_bit_name "fpga_top.bit"
+		setenv fpga_bit_addr "0x20000000"  
+		setenv kernel_addr "0x00200000"   
+		setenv dtb_addr "0x00100000"   
+	
+		### 修改mmc0 单独处理，加载mmc0:1启动根文件系统 ###
+		if test "${boot_target}" = "mmc0"; then
+			echo "Running 2026-02-05 boot.scr: load bit dtb kernel ,start rootfs for ext4(mmc0:1)"
+			setenv distro_bootpart 1
+			echo "mmc0: force load from partition 1 (${devtype} ${devnum}:1)"
+
+			setenv bootargs "root=/dev/mmcblk0p2 rootfstype=ext4 rw console=ttyPS0,115200 rootwait uio_pdrv_genirq.of_id=generic-uio clk_ignore_unused mem=512M"
+			echo "Custom bootargs loaded: ${bootargs}"
+
+			echo "/****************************/"
+			echo "/******load fpga_top.bit*****/"
+			echo "/****************************/"
+			# 初始化mmc设备（修复电压选择问题）
+			mmc dev ${devnum}
+			if test -e ${devtype} ${devnum}:${distro_bootpart} /${fpga_bit_name}; then
+				# load bit to fpga_bit_addr
+				echo "mmc0:1: Loading ${fpga_bit_name} to ${fpga_bit_addr}..."
+				fatload ${devtype} ${devnum}:${distro_bootpart} ${fpga_bit_addr} ${fpga_bit_name}
+				# fpga load 总线号 加载地址 文件大小(自动取filesize)
+				echo "mmc0:1: Programming PL with ${fpga_bit_name}... "
+				fpga loadb 0 ${fpga_bit_addr} ${filesize}
+				echo "mmc0:1: PL Program Done!"
+			else
+				# 容错：bit文件不存在，打印提示但继续启动Linux
+				echo "WARNING: ${fpga_bit_name} NOT found in mmc0:1! Skip PL programming..."
+			fi
+		fi
+
+		# 初始化mmc设备
+		mmc dev ${devnum}
+		if test -e ${devtype} ${devnum}:${distro_bootpart} /${kernel_name}; then
+			echo "load mmc0:1-kernel to 0x00200000 "
+			fatload ${devtype} ${devnum}:${distro_bootpart} 0x00200000 ${kernel_name};
+		fi
+		if test -e ${devtype} ${devnum}:${distro_bootpart} /system.dtb; then
+			echo "load mmc0:1-system.dtb to 0x00100000 "
+			fatload ${devtype} ${devnum}:${distro_bootpart} 0x00100000 system.dtb;
+		fi
+		bootm 0x00200000 - 0x00100000
+	fi
+
+if test "${boot_target}" = "xspi0" || test "${boot_target}" = "qspi" || test "${boot_target}" = "qspi0"; then
+		echo "===== QSPI Boot Start: EMMC2 first, EMMC1 fallback ====="
+		setenv emmc_dev 1
+		# 0. 全局变量定义（避免依赖外部，适配你的硬件）
+		setenv bootargs "root=/dev/mmcblk0p2 rootfstype=ext4 rw console=ttyPS0,115200 rootwait uio_pdrv_genirq.of_id=generic-uio clk_ignore_unused mem=512M"
+
+		# 1. 基础初始化（仅EMMC，无SD卡）
+		echo "1. Initialize QSPI and EMMC..."
+		sf probe 0 0 0             
+		mmc dev ${emmc_dev}      
+		if test $? -ne 0; then
+			echo "ERROR: EMMC init failed! Exit QSPI boot"
+			continue
+		fi
+
+		# 2. 初始化状态标记
+		setenv use_part 2                
+		setenv load_ok 0                
+		setenv fitimage_name "image.ub"	
+		setenv kernel_name "uImage"
+		setenv ramdisk_name "ramdisk.cpio.gz.u-boot"
+		setenv rootfs_name "rootfs.cpio.gz.u-boot"
+		setenv fpga_bit_name "fpga_top.bit"
+		setenv fpga_bit_addr "0x20000000"  
+		setenv kernel_addr "0x00200000"   
+		setenv dtb_addr "0x00100000"       
+
+		# ===================== 阶段1：尝试EMMC2分区加载 =====================
+		echo "2. Load files from EMMC partition 2 (1:2)..."
+		# 检查文件是否存在 + 加载（必须全部成功才标记ok）
+		if test -e mmc ${emmc_dev}:2 ${fpga_bit_name} && test -e mmc ${emmc_dev}:2 system.dtb && test -e mmc ${emmc_dev}:2 ${kernel_name}; then
+			echo " EMMC2 partition: All files loaded successfully!"
+			fatload mmc ${emmc_dev}:2 ${fpga_bit_addr} ${fpga_bit_name}
+			fatload mmc ${emmc_dev}:2 ${dtb_addr} system.dtb
+			fatload mmc ${emmc_dev}:2 ${kernel_addr} ${kernel_name}
+			setenv load_ok 1
+		else
+			echo " EMMC2 partition: File load failed (bit/dtb/kernel)!"
+			setenv use_part 1            
+			setenv load_ok 0
+		fi
+
+		# ===================== 阶段2：EMMC2启动（加载成功才尝试） =====================
+		if test ${use_part} -eq 2 && test ${load_ok} -eq 1; then  # 修复语法错误：补充test
+			echo "3. Boot from EMMC partition 2..."
+			# 烧写FPGA（检查烧写是否成功）
+			echo "   - Program FPGA with bitstream..."
+			fpga loadb 0 ${fpga_bit_addr} ${filesize}
+			if test $? -eq 0; then
+				echo "  FPGA programmed successfully!"
+				# 启动系统（bootm失败则继续执行后续降级逻辑）
+				echo "   - Start Linux from EMMC2..."
+				bootm ${kernel_addr} - ${dtb_addr};
+			else
+				echo "  FPGA program failed! Switch to EMMC1"
+				setenv use_part 1
+			fi
+			
+			# 只有bootm失败才会执行到这里 → 切EMMC1分区
+			echo " EMMC2 partition: Boot failed! Switch to partition 1"
+			setenv use_part 1
+		fi
+
+		# ===================== 阶段3：EMMC1分区加载 + 启动 =====================
+		echo "4. Load and boot from EMMC partition 1 (1:1)..."
+		# 加载EMMC1分区的所有文件
+		if test -e mmc ${emmc_dev}:1 ${fpga_bit_name} && test -e mmc ${emmc_dev}:1 system.dtb && test -e mmc ${emmc_dev}:1 ${kernel_name}; then
+			fatload mmc ${emmc_dev}:1 ${fpga_bit_addr} ${fpga_bit_name}
+			fatload mmc ${emmc_dev}:1 ${dtb_addr} system.dtb
+			fatload mmc ${emmc_dev}:1 ${kernel_addr} ${kernel_name}
+			# 烧写FPGA（检查烧写状态）
+			echo "   - Program FPGA with EMMC1 bitstream..."
+			fpga loadb 0 ${fpga_bit_addr} ${filesize}
+			if test $? -eq 0; then
+				echo " FPGA programmed successfully!"
+				echo "   - Start Linux from EMMC partition 1..."
+				bootm ${kernel_addr} - ${dtb_addr};
+			else
+				echo " FPGA program failed! Cannot boot!"
+			fi
+		else
+			echo "ERROR: EMMC1 partition file load failed! Cannot boot!"
+		fi
+
+		echo "===== QSPI Boot End ====="
+	fi
+
+
+	if test "${boot_target}" = "nand" || test "${boot_target}" = "nand0"; then
+		nand info;
+		nand read 0x10000000 0x1080000 0x6400000
+		bootm 0x10000000;
+		echo "Booting using Fit image failed"
+
+		nand read 0x00200000 0x1000000 0x3200000
+		nand read 0x04000000 0x4600000 0x3200000
+		bootm 0x00200000 0x04000000 0x00100000;
+		echo "Booting using Separate images failed"
+	fi
+done

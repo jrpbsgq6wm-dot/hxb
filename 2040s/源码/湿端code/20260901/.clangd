@@ -1,0 +1,8 @@
+CompileFlags:
+  Add:
+    - -Iinc
+    - -Isrc
+    - -DDEBUG
+    - -xc
+  Remove:
+    - -static-libgcc
