@@ -1,0 +1,31 @@
+2026082601
+    PS：PL添加pps状态判断，PS解析后并回复到显控的指定字段中
+        typedef struct
+        {
+            unsigned int UP_DataType;		// 数据类型 0-原始数据，1-IQ解调数据 4 Byte
+            unsigned int UP_Work_Mode;		// 工作模式0-cw       1-LFM
+            unsigned int UP_Work_Period;	// 工作周期	---待定
+            unsigned int UP_ADC_sp;			// AD采样周期
+            unsigned int UP_ADC_sn;			// AD采样次数
+            unsigned int UP_DAC_sp;			// DA采样周期
+            unsigned int UP_DAC_sn;			// DA采样次数
+            unsigned int UP_PWM_FREQUENCY;	// PWM频率
+            unsigned int UP_PWM_LFM;		// PWM调频	0-升频     1降频
+            float UP_PWM_PULSE_WIDTH;		// PWM脉宽  float
+            unsigned int UP_PWM_CF;			// PWM中心频率
+            unsigned int UP_ADC_sf;			// 采样率
+            unsigned int UP_PWM_START;		// pwm开关
+            unsigned int UP_RANGE;			// 量程
+            unsigned int UP_PWM_BAND_WIDTH; // PWM带宽
+            float UP_PING_rate;				// PING率  float
+            unsigned int UP_PPS_10ns;		// PPS纳秒计数_单位10ns，声学数据时间戳
+            unsigned int UP_PPS_s;			// PPS计数
+            unsigned int UP_FrameNumber;	// 帧号--帧计数
+            float UP_PT100;					 // 声速 温度，单位摄氏度℃
+            unsigned int UP_SAMPL_sf_IQ;	//IQ抽样后采样率
+            float UP_TMP451;				//舱内温度
+            unsigned int UP_SAMPL_sf_AD;	//AD抽样后采样次数
+            unsigned int pps_status;			//pps状态               <<---------
+            unsigned int UP_RSV[7];		 // 预留4*7                     <<---------
+            unsigned int UP_SonarDataLength; // 声学数据的总长度
+        } __attribute__((packed)) SEND_UPPER_SONAR_FIRST;

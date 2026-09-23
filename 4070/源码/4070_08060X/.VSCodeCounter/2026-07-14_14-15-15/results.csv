@@ -1,0 +1,29 @@
+"filename", "language", "Makefile", "C++", "Shell Script", "C", "comment", "blank", "total"
+"z:\4070_code\4070_071302\Makefile", "Makefile", 66, 0, 0, 0, 10, 25, 101
+"z:\4070_code\4070_071302\build\build.sh", "Shell Script", 0, 0, 107, 0, 34, 26, 167
+"z:\4070_code\4070_071302\include\CuBeamOne.h", "C++", 0, 73, 0, 0, 5, 17, 95
+"z:\4070_code\4070_071302\include\eeprom.h", "C++", 0, 23, 0, 0, 39, 11, 73
+"z:\4070_code\4070_071302\include\fpga_init.h", "C++", 0, 109, 0, 0, 45, 30, 184
+"z:\4070_code\4070_071302\include\fpga_to_upper.h", "C++", 0, 88, 0, 0, 14, 13, 115
+"z:\4070_code\4070_071302\include\network.h", "C++", 0, 18, 0, 0, 2, 5, 25
+"z:\4070_code\4070_071302\include\pri.h", "C++", 0, 18, 0, 0, 4, 6, 28
+"z:\4070_code\4070_071302\include\sensor_log.h", "C++", 0, 35, 0, 0, 3, 7, 45
+"z:\4070_code\4070_071302\include\sensor_to_upper.h", "C++", 0, 11, 0, 0, 1, 1, 13
+"z:\4070_code\4070_071302\include\tcp_tx_ring.h", "C++", 0, 12, 0, 0, 17, 7, 36
+"z:\4070_code\4070_071302\include\tmp451.h", "C++", 0, 26, 0, 0, 36, 13, 75
+"z:\4070_code\4070_071302\include\upper_to_fpga.h", "C++", 0, 106, 0, 0, 7, 18, 131
+"z:\4070_code\4070_071302\include\write_file.h", "C++", 0, 20, 0, 0, 18, 8, 46
+"z:\4070_code\4070_071302\src\CuBeamOne.c", "C", 0, 0, 0, 157, 75, 19, 251
+"z:\4070_code\4070_071302\src\eeprom.c", "C", 0, 0, 0, 188, 29, 14, 231
+"z:\4070_code\4070_071302\src\fpga_init.c", "C", 0, 0, 0, 124, 22, 16, 162
+"z:\4070_code\4070_071302\src\fpga_to_upper.c", "C", 0, 0, 0, 482, 295, 79, 856
+"z:\4070_code\4070_071302\src\gpio.c", "C", 0, 0, 0, 102, 26, 14, 142
+"z:\4070_code\4070_071302\src\network.c", "C", 0, 0, 0, 151, 56, 18, 225
+"z:\4070_code\4070_071302\src\pri.c", "C", 0, 0, 0, 45, 8, 12, 65
+"z:\4070_code\4070_071302\src\sensor_log.c", "C", 0, 0, 0, 151, 8, 36, 195
+"z:\4070_code\4070_071302\src\sensor_to_upper.c", "C", 0, 0, 0, 128, 28, 12, 168
+"z:\4070_code\4070_071302\src\tcp_tx_ring.c", "C", 0, 0, 0, 166, 19, 41, 226
+"z:\4070_code\4070_071302\src\tmp451.c", "C", 0, 0, 0, 95, 28, 18, 141
+"z:\4070_code\4070_071302\src\upper_to_fpga.c", "C", 0, 0, 0, 731, 250, 80, 1061
+"z:\4070_code\4070_071302\src\write_file.c", "C", 0, 0, 0, 153, 22, 39, 214
+"Total", "-", 66, 539, 107, 2673, 1101, 585, 5071

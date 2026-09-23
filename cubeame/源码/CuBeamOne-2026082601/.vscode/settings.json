@@ -1,0 +1,61 @@
+{
+    "files.associations": {
+        "limits": "c",
+        "cmath": "c",
+        "*.tcc": "c",
+        "type_traits": "c",
+        "typeinfo": "c"
+    },
+    "C_Cpp.dimInactiveRegions": false,
+    "C_Cpp.errorSquiggles": "enabled",
+
+    // "workbench.colorTheme": "Default Dark+",
+    // "workbench.iconTheme": "vscode-icons",
+    // "editor.fontSize": 14,
+    // "vsicons.dontShowNewVersionMessage": true,
+    // "git.confirmSync": false,
+    // "git.autofetch": true,
+
+    // "fileheader.configObj": {
+    //     "createFileTime": true,
+    //     "autoAdd": true,
+    //     "createHeader": true,
+    //     "wideNum": 13,
+    //     "functionWideNum": 12,
+    //     "openFunctionParamsCheck": true ,
+    //     "annotationStr": {
+    //         "head": "/*",
+    //         "middle": " * *",
+    //         "end": " */",
+    //         "use": true 
+    //     },
+    // "language": {
+    //     "h/hpp/cpp/c": {
+    //         "head": "/************************************************************************************************",
+    //         "middle": " * * ",
+    //         "end": " *************************************************************************************************/",
+    //         "use": true
+    //         },
+    //     },
+    // },
+
+    // "fileheader.cursorMode": {
+    // "description": "",
+    // "param ": "",
+    // "return": "",
+    // "Date": "Do not edit",
+    // "custom_string_obkorol":"Other",
+    // },
+    
+    // "fileheader.customMade": {
+    //     "custom_string_obkorol_copyright": "Copyright (C) ${now_year} Beijing StarTest High-Tech Co., Ltd.\n",
+    //     "custom_string_obkorol": "All rights reserved by Star Test, Inc.\n",
+    //     "FilePath": "only file name" ,
+    //     "custom_string_obkorol2": "",
+    //     "Author": "FuYanShun <fuyanshun@startest,net>\n",
+    //     "Date": "Do not edit",
+    //     "custom_string_obkorol3": "",
+    //     "LastEditTime": "Do not edit",
+    // },
+    // "workbench.editor.untitled.hint": "hidden"
+}

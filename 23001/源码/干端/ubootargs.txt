@@ -1,0 +1,24 @@
+setenv sdboot 'echo Copying zImage/dtb from SD to RAM... ${production_data}&& run fpga_load_bit; && setenv bootargs '\''console=ttyPS0,115200 root=/dev/ram0 rootwait rw initrd=0x6000000,0x1000000 rdinit=/sbin/init panic=3 uio_pdrv_genirq.of_id=generic-uio'\'';load mmc 0:2 ${loadkernel_addr} ${image_name} && load mmc 0:2 ${loaddtb_addr} ${dtb_name} && load mmc 0:2 ${loadrootfs_addr} ${rootfsname} && bootz ${loadkernel_addr} ${loadrootfs_addr}:${rootfssize} ${loaddtb_addr}'
+
+saveenv
+
+
+# 1. 编辑路由表配置 /etc/iproute2/rt_tables，添加：
+echo "100 eth0_table" >> /etc/iproute2/rt_tables
+echo "200 eth1_table" >> /etc/iproute2/rt_tables
+
+# 2. 为eth0配置策略路由
+ip route add 192.168.0.0/24 dev eth0 src 192.168.0.4 table eth0_table
+ip route add default dev eth0 table eth0_table
+ip rule add from 192.168.0.4 table eth0_table
+ip rule add to 192.168.0.4 table eth0_table
+
+# 3. 为eth1配置策略路由
+ip route add 192.168.0.0/24 dev eth1 src 192.168.0.7 table eth1_table
+ip route add default dev eth1 table eth1_table
+ip rule add from 192.168.0.7 table eth1_table
+ip rule add to 192.168.0.7 table eth1_table
+
+
+
+Star123@@

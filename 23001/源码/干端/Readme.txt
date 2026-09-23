@@ -1,0 +1,4 @@
+BOOT.bin上线版本位于20260522文件夹内
+
+dryTransUp_app_260515为干端双网口app程序
+dryTransUp_app_260628为干端单网口app程序
